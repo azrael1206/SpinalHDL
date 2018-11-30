@@ -1,3 +1,7 @@
+//This library is to automaticly run Synthesise, Implementation and the write Bitstream
+
+
+
 package vexriscv.demo
 
 import java.io.File
@@ -28,11 +32,31 @@ object VivadoFlow {
 
   val isWindows = System.getProperty("os.name").toLowerCase().contains("win")
 
-  def apply(vivadoPath : String,workspacePath : String,toplevelPath : String,family : String,device : String,frequencyTarget : HertzNumber = null,processorCount : Int = 1, constraintPath : String = null, mmcm : Boolean = false, writeBitstream : Boolean = false, mergedPath : String = null) : Report = {
+  //vivadoPath = path to the Vivado binarys
+  //workspacePath = path to the temporary Workspace. Attention the folder is deleted before every run
+  //family = FPGA family, for example Artix 7
+  //device = the model number of the FPGA
+  //frequencyTarget = at which frequency the design runs
+  //processorCount = not used yet
+  //constraintPath = path to the constraint file. When no constraint file exists a standard constraint file will be made
+  //mmcm = if true a mmcm with the frequencyTarget will be generatet. You must make a black Box in your design for the mmcm
+  //writeBitstream = if true a Bitstream file will be written
+  //mergedPath = this is for when you use a black box with load a vhdl or verilog file
+  //optimize = it has three options standard is the default option, speed is for max frequency and area is for small area
+  def apply(vivadoPath : String,workspacePath : String,toplevelPath : String,family : String,device : String,frequencyTarget : HertzNumber = null,processorCount : Int = 1, constraintPath : String = null, mmcm : Boolean = false, writeBitstream : Boolean = false, mergedPath : String = null, optimize : String = "standard") : Report = {
     val projectName = toplevelPath.split("/").last.split("[.]").head
     val targetPeriod = (if (frequencyTarget != null) frequencyTarget else 400 MHz).toTime
     val targetTiming = (((targetPeriod * 1e9)) % 1) toDouble
-
+    val synthopt = optimize match {
+      case "area" => "-directive AreaOptimized_high -control_set_opt_threshold 1"
+      case "speed" => "-fanout_limit 400 -fsm_extraction one_hot -keep_equivalent_registers -resource_sharing off -no_lc -shreg_min_size 5"
+      case _ => ""
+    }
+    val impopt = optimize match {
+      case "area" => "-directive ExploreArea"
+      case "speed" => "-directive Explore"
+      case _ => ""
+    }
     val workspacePathFile = new File(workspacePath)
     FileUtils.deleteDirectory(workspacePathFile)
     workspacePathFile.mkdir()
@@ -49,10 +73,10 @@ object VivadoFlow {
          ${if(mmcm) "read_vhdl mmcm.vhd" else ""}
          ${if(mergedPath != null) if(isMVHDL) "read_vhdl" + mergedPath else "read_verilog" + mergedPath else "" }
 read_xdc ${if(constraintPath == null) "doit.xdc" else constraintPath}
-synth_design -part $device -top ${toplevelPath.split("\\.").head}
-opt_design
-place_design
-route_design
+synth_design -part $device -top ${toplevelPath.split("\\.").head} $synthopt
+opt_design $impopt
+place_design $impopt
+route_design $impopt
 report_utilization
 report_timing
 ${if(writeBitstream) "write_bitstream -force " +  toplevelPath.split("\\.").head + ".bit"}        """
