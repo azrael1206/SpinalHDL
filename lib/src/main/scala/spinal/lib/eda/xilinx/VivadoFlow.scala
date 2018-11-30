@@ -1,8 +1,7 @@
 //This library is to automaticly run Synthesise, Implementation and the write Bitstream
 
 
-
-package vexriscv.demo
+package spinal.lib.eda.xilinx
 
 import java.io.File
 import java.nio.file.Paths
@@ -39,7 +38,7 @@ object VivadoFlow {
   //frequencyTarget = at which frequency the design runs
   //processorCount = not used yet
   //constraintPath = path to the constraint file. When no constraint file exists a standard constraint file will be made
-  //mmcm = if true a mmcm with the frequencyTarget will be generatet. You must make a black Box in your design for the mmcm
+  //mmcm = if true a mmcm with the frequencyTarget will be generatet. A blackbox for the mmcm is in the package spinal.lib.eda.xilinx
   //writeBitstream = if true a Bitstream file will be written
   //mergedPath = this is for when you use a black box with load a vhdl or verilog file
   //optimize = it has three options standard is the default option, speed is for max frequency and area is for small area
